@@ -162,7 +162,7 @@ def findPorts(data, endianness):
                 portSet[port] = True
     return result
 
-# Get the netwokr interfaces in the router, except 127.0.0.1
+# Get the network interfaces in the router, except 127.0.0.1
 def findNonLoInterfaces(data, endianness):
     lines = stripTimestamps(data)
     candidates = filter(lambda l: l.startswith(b"__inet_insert_ifa"), lines) # logs for the inconfig process

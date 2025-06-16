@@ -6,7 +6,6 @@ function print_usage()
     echo "mode: use one option at once"
     echo "      -r, --run     : run mode         - run emulation (no quit)"
     echo "      -c, --check   : check mode       - check network reachable and web access (quit)"
-    echo "      -a, --analyze : analyze mode     - analyze vulnerability (quit)"
     echo "      -d, --debug   : debug mode       - debugging emulation (no quit)"
     echo "      -b, --boot    : boot debug mode  - kernel boot debugging using QEMU (no quit)"
 }
@@ -33,8 +32,6 @@ function get_option()
     OPTION=${1}
     if [ ${OPTION} = "-c" ] || [ ${OPTION} = "--check" ]; then
         echo "check"
-    elif [ ${OPTION} = "-a" ] || [ ${OPTION} = "--analyze" ]; then
-        echo "analyze"
     elif [ ${OPTION} = "-r" ] || [ ${OPTION} = "--run" ]; then
         echo "run"
     elif [ ${OPTION} = "-d" ] || [ ${OPTION} = "--debug" ]; then
@@ -209,7 +206,6 @@ function run_emulation()
           python3 -u ./scripts/makeNetwork.py -i $IID -q -o -a ${ARCH} \
           2>&1 > ${WORK_DIR}/makeNetwork.log
         ln -s ./run.sh ${WORK_DIR}/run_debug.sh | true
-        ln -s ./run.sh ${WORK_DIR}/run_analyze.sh | true
         ln -s ./run.sh ${WORK_DIR}/run_boot.sh | true
 
         t_end="$(date -u +%s.%N)"
@@ -236,32 +232,6 @@ function run_emulation()
     else
         echo false > ${WORK_DIR}/result
     fi
-
-    if [ ${OPTION} = "analyze" ]; then
-        # ================================
-        # analyze firmware (check vulnerability)
-        # ================================
-        t_start="$(date -u +%s.%N)"
-        if ($WEB_RESULT); then
-            echo "[*] Waiting web service..."
-            ${WORK_DIR}/run_analyze.sh &
-            IP=`cat ${WORK_DIR}/ip`
-            check_network ${IP} false
-
-            echo -e "[\033[32m+\033[0m] start pentest!"
-            cd analyses
-            ./analyses_all.sh $IID $BRAND $IP $PSQL_IP
-            cd -
-
-            sync
-            kill $(ps aux | grep `get_qemu ${ARCH}` | awk '{print $2}') 2> /dev/null
-            sleep 2
-        else
-            echo -e "[\033[31m-\033[0m] Web unreachable"
-        fi
-        t_end="$(date -u +%s.%N)"
-        time_analyze="$(bc <<<"$t_end-$t_start")"
-        echo $time_analyze > ${WORK_DIR}/time_analyze
 
     elif [ ${OPTION} = "debug" ]; then
         # ================================
